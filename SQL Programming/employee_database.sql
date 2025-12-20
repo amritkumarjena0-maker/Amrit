@@ -103,4 +103,154 @@ ORDER BY hire_date DESC;
 UPDATE employees SET salary = salary * 1.05 WHERE emp_id = 4;
 
 -- Query 8: Search employees by name
-SELECT * FROM employees WHERE first_name LIKE '%John%' OR last_name LIKE '%John%';-- 
+SELECT * FROM employees WHERE first_name LIKE '%John%' OR last_name LIKE '%John%';
+
+
+-- ======================
+-- CREATE VIEWS
+-- ======================
+
+-- --View 1: Employee Details with Department
+create view vm_employee_details as
+select
+e.emp_id,
+e.first_name,
+e.last_name,
+e.email,
+e.phone,
+e.hire_date,
+e.job_title,
+e.salary,
+d.dept_name,
+d.location
+from employees e
+left join departments d on e.dept_id = d.dept_id;
+
+-- -- View 2: Manager and Employee Hierarchy
+CREATE VIEW vw_manager_hierarchy AS
+SELECT 
+    e.emp_id,
+    e.first_name AS employee_first_name,
+    e.last_name AS employee_last_name,
+    e.job_title AS employee_job_title,
+    m.emp_id AS manager_id,
+    m.first_name AS manager_first_name,
+    m.last_name AS manager_last_name,
+    m.job_title AS manager_job_title
+FROM employees e
+LEFT JOIN employees m ON e.manager_id = m.emp_id;
+
+-- -- View 3: Department Summary
+CREATE VIEW vw_department_summary AS
+SELECT 
+    d.dept_id,
+    d.dept_name,
+    d.location,
+    COUNT(e.emp_id) AS total_employees,
+    AVG(e.salary) AS avg_salary,
+    MIN(e.salary) AS min_salary,
+    MAX(e.salary) AS max_salary
+FROM departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_id, d.dept_name, d.location;
+
+
+-- --View 4: High Earners (Above Average Salary)
+CREATE VIEW vw_high_earners AS
+SELECT 
+    e.emp_id,
+    e.first_name,
+    e.last_name,
+    e.job_title,
+    e.salary,
+    d.dept_name
+FROM employees e
+LEFT JOIN departments d ON e.dept_id = d.dept_id
+WHERE e.salary > (SELECT AVG(salary) FROM employees);
+
+
+-- --View 5: Recent Hires (Last 2 Years)
+CREATE VIEW vw_recent_hires AS
+SELECT 
+    e.emp_id,
+    e.first_name,
+    e.last_name,
+    e.email,
+    e.hire_date,
+    e.job_title,
+    d.dept_name
+FROM employees e
+LEFT JOIN departments d ON e.dept_id = d.dept_id
+WHERE e.hire_date >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
+ORDER BY e.hire_date DESC;
+
+
+-- ======================
+-- QUERY VIEWS
+-- ======================
+
+-- --Query views to see the data
+SELECT * FROM vm_employee_details;
+SELECT * FROM vw_manager_hierarchy;
+SELECT * FROM vw_department_summary;
+SELECT * FROM vw_high_earners;
+SELECT * FROM vw_recent_hires;
+
+
+-- ======================
+-- REGULAR QUERIES
+-- ======================
+
+
+-- -- Query 1: View all employees
+SELECT * FROM employees;
+
+
+-- --Query 2: List all employees with their department names
+SELECT e.emp_id, e.first_name, e.last_name, e.job_title, e.salary, d.dept_name
+FROM employees e
+LEFT JOIN departments d ON e.dept_id = d.dept_id
+ORDER BY e.emp_id;
+
+
+-- --Query 2: Find employees earning above average salary
+SELECT first_name, last_name, salary
+FROM employees
+WHERE salary > (SELECT AVG(salary) FROM employees)
+ORDER BY salary DESC;
+
+
+-- --Query 3: Count employees by department
+SELECT d.dept_name, COUNT(e.emp_id) AS employee_count
+FROM departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name
+ORDER BY employee_count DESC;
+
+
+-- --Query 4: Find managers and their direct reports
+SELECT 
+    m.first_name AS manager_first_name,
+    m.last_name AS manager_last_name,
+    e.first_name AS employee_first_name,
+    e.last_name AS employee_last_name,
+    e.job_title
+FROM employees e
+JOIN employees m ON e.manager_id = m.emp_id
+ORDER BY m.emp_id, e.emp_id;
+
+
+-- --Query 5: Calculate average salary by department
+SELECT d.dept_name, AVG(e.salary) AS avg_salary, COUNT(e.emp_id) AS num_employees
+FROM departments d
+LEFT JOIN employees e ON d.dept_id = e.dept_id
+GROUP BY d.dept_name
+HAVING COUNT(e.emp_id) > 0
+ORDER BY avg_salary DESC;
+
+
+-- --Query 6: Find employees hired in the last year
+SELECT first_name, last_name, hire_date, job_title
+FROM employees
+WHERE hire_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+ORDER BY hire_date DESC;
