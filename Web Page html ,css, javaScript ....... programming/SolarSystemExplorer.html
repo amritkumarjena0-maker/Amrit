@@ -1,0 +1,354 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Solar System Explorer</title> 
+    <style> 
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        } 
+ 
+        body { 
+            font-family: 'Arial', sans-serif; 
+            background: #000; 
+            overflow: hidden; 
+            color: white; 
+            height: 100vh; 
+        } 
+ 
+        #canvas { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+        } 
+ 
+        .ui { 
+            position: fixed; 
+            top: 20px; 
+            left: 20px; 
+            z-index: 100; 
+        } 
+ 
+        .title { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #ffd700; 
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8); 
+            margin-bottom: 10px; 
+        } 
+ 
+        .subtitle { 
+            font-size: 14px; 
+            color: #ccc; 
+        } 
+ 
+        .info-box { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            background: rgba(0, 0, 0, 0.85); 
+            border: 2px solid #ffd700; 
+            border-radius: 10px; 
+            padding: 20px; 
+            width: 300px; 
+            max-height: 80vh; 
+            overflow-y: auto; 
+            z-index: 100; 
+        } 
+ 
+        .info-box h2 { 
+            color: #ffd700; 
+            margin-bottom: 15px; 
+            font-size: 24px; 
+        } 
+ 
+        .info-box p { 
+            margin: 8px 0; 
+            line-height: 1.6; 
+            font-size: 14px; 
+        } 
+ 
+        .info-box strong { 
+            color: #4a90e2; 
+        } 
+ 
+        .controls { 
+            position: fixed; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            background: rgba(0, 0, 0, 0.85); 
+            border: 2px solid #ffd700; 
+            border-radius: 30px; 
+            padding: 15px 30px; 
+            display: flex; 
+            gap: 10px; 
+            z-index: 100; 
+        } 
+ 
+        .controls button { 
+            background: #1a1a2e; 
+            border: 1px solid #ffd700; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: all 0.3s; 
+        } 
+ 
+        .controls button:hover { 
+            background: #ffd700; 
+            color: #000; 
+        } 
+ 
+        .controls button.active { 
+            background: #ffd700; 
+            color: #000; 
+        } 
+ 
+        .planet-list { 
+            position: fixed; 
+            bottom: 80px; 
+            left: 20px; 
+            background: rgba(0, 0, 0, 0.85); 
+            border: 2px solid #ffd700; 
+            border-radius: 10px; 
+            padding: 15px; 
+            z-index: 100; 
+        } 
+ 
+        .planet-btn { 
+            display: block; 
+            width: 100%; 
+            background: #1a1a2e; 
+            border: 1px solid #666; 
+            color: white; 
+            padding: 8px 15px; 
+            margin: 5px 0; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            text-align: left; 
+            font-size: 13px; 
+            transition: all 0.3s; 
+        } 
+ 
+        .planet-btn:hover { 
+            background: #2a2a4e; 
+            border-color: #ffd700; 
+        } 
+    </style> 
+</head> 
+<body> 
+    <canvas id="canvas"></canvas> 
+     
+    <div class="ui"> 
+        <div class="title">Solar System Explorer</div> 
+        <div class="subtitle">Click planets to explore</div> 
+    </div> 
+ 
+    <div class="info-box" id="infoBox"> 
+        <h2>Welcome!</h2> 
+        <p>Explore our Solar System by clicking on the planets or sun.</p> 
+        <p>Use the controls below to adjust the speed of the orbits.</p> 
+    </div> 
+ 
+    <div class="planet-list"> 
+        <button class="planet-btn" onclick="focusPlanet('Sun')">
+☀
+ Sun</button> 
+        <button class="planet-btn" onclick="focusPlanet('Mercury')">Mercury</button> 
+        <button class="planet-btn" onclick="focusPlanet('Venus')">Venus</button> 
+        <button class="planet-btn" onclick="focusPlanet('Earth')">
+🌍
+ Earth</button> 
+        <button class="planet-btn" onclick="focusPlanet('Mars')">Mars</button> 
+        <button class="planet-btn" onclick="focusPlanet('Jupiter')">Jupiter</button> 
+        <button class="planet-btn" onclick="focusPlanet('Saturn')">Saturn</button> 
+        <button class="planet-btn" onclick="focusPlanet('Uranus')">Uranus</button> 
+        <button class="planet-btn" onclick="focusPlanet('Neptune')">Neptune</button> 
+    </div> 
+ 
+    <div class="controls"> 
+        <button onclick="setSpeed(0.5)">Slow</button> 
+        <button onclick="setSpeed(1)" class="active" id="normalBtn">Normal</button> 
+        <button onclick="setSpeed(2)">Fast</button> 
+        <button onclick="setSpeed(0)">Pause</button> 
+    </div> 
+ 
+    <script> 
+        const canvas = document.getElementById('canvas'); 
+        const ctx = canvas.getContext('2d'); 
+         
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+ 
+        let speed = 1; 
+        let time = 0; 
+ 
+        const planets = [ 
+            { name: 'Mercury', radius: 6, distance: 80, speed: 0.04, color: '#8c7853', info: 'The smallest planet and closest to the Sun.', diameter: '4,879 km', year: '88 days' }, 
+            { name: 'Venus', radius: 10, distance: 110, speed: 0.03, color: '#ffc649', info: 'The hottest planet with thick clouds.', diameter: '12,104 km', year: '225 days' }, 
+            { name: 'Earth', radius: 11, distance: 145, speed: 0.025, color: '#4a90e2', info: 'Our home, the only planet with life.', diameter: '12,742 km', year: '365 days' }, 
+            { name: 'Mars', radius: 8, distance: 175, speed: 0.02, color: '#e27b58', info: 'The Red Planet with huge volcanoes.', diameter: '6,779 km', year: '687 days' }, 
+            { name: 'Jupiter', radius: 25, distance: 250, speed: 0.01, color: '#c88b3a', info: 'The largest planet with Great Red Spot.', diameter: '139,820 km', year: '12 years' }, 
+            { name: 'Saturn', radius: 22, distance: 320, speed: 0.008, color: '#f4d47c', info: 'Famous for its spectacular rings.', diameter: '116,460 km', year: '29 years' }, 
+            { name: 'Uranus', radius: 16, distance: 380, speed: 0.006, color: '#4fd0e7', info: 'Ice giant rotating on its side.', diameter: '50,724 km', year: '84 years' }, 
+            { name: 'Neptune', radius: 15, distance: 440, speed: 0.005, color: '#4166f5', info: 'The windiest planet in our system.', diameter: '49,244 km', year: '165 years' } 
+        ]; 
+ 
+        const stars = []; 
+        for (let i = 0; i < 300; i++) { 
+            stars.push({ 
+                x: Math.random() * canvas.width, 
+                y: Math.random() * canvas.height, 
+                radius: Math.random() * 1.5, 
+                opacity: Math.random() 
+            }); 
+        } 
+ 
+        function drawStars() { 
+            stars.forEach(star => { 
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`; 
+                ctx.beginPath(); 
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2); 
+                ctx.fill(); 
+            }); 
+        } 
+ 
+        function drawSun() { 
+            const centerX = canvas.width / 2; 
+            const centerY = canvas.height / 2; 
+             
+            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 30); 
+            gradient.addColorStop(0, '#fff5b1'); 
+            gradient.addColorStop(0.5, '#ffd700'); 
+            gradient.addColorStop(1, '#ff8c00'); 
+             
+            ctx.fillStyle = gradient; 
+            ctx.beginPath(); 
+            ctx.arc(centerX, centerY, 30, 0, Math.PI * 2); 
+            ctx.fill(); 
+             
+            ctx.shadowBlur = 40; 
+            ctx.shadowColor = '#ffa500'; 
+            ctx.fill(); 
+            ctx.shadowBlur = 0; 
+        } 
+ 
+        function drawPlanets() { 
+            const centerX = canvas.width / 2; 
+            const centerY = canvas.height / 2; 
+ 
+            planets.forEach(planet => { 
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)'; 
+                ctx.lineWidth = 1; 
+                ctx.beginPath(); 
+                ctx.arc(centerX, centerY, planet.distance, 0, Math.PI * 2); 
+                ctx.stroke(); 
+ 
+                const angle = time * planet.speed * speed; 
+                const x = centerX + Math.cos(angle) * planet.distance; 
+                const y = centerY + Math.sin(angle) * planet.distance; 
+ 
+                ctx.fillStyle = planet.color; 
+                ctx.beginPath(); 
+                ctx.arc(x, y, planet.radius, 0, Math.PI * 2); 
+                ctx.fill(); 
+ 
+                ctx.shadowBlur = 10; 
+                ctx.shadowColor = planet.color; 
+                ctx.fill(); 
+                ctx.shadowBlur = 0; 
+ 
+                planet.x = x; 
+                planet.y = y; 
+            }); 
+        } 
+ 
+        function animate() { 
+            ctx.fillStyle = '#000'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height); 
+             
+            drawStars(); 
+            drawSun(); 
+            drawPlanets(); 
+             
+            time += 0.5; 
+            requestAnimationFrame(animate); 
+        } 
+ 
+        canvas.addEventListener('click', (e) => { 
+            const rect = canvas.getBoundingClientRect(); 
+            const x = e.clientX - rect.left; 
+            const y = e.clientY - rect.top; 
+             
+            const centerX = canvas.width / 2; 
+            const centerY = canvas.height / 2; 
+            const distToSun = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2); 
+             
+            if (distToSun < 30) { 
+                showInfo('Sun'); 
+                return; 
+            } 
+ 
+            planets.forEach(planet => { 
+                const dist = Math.sqrt((x - planet.x) ** 2 + (y - planet.y) ** 2); 
+                if (dist < planet.radius + 5) { 
+                    showInfo(planet.name); 
+                } 
+            }); 
+        }); 
+ 
+        function showInfo(body) { 
+            const infoBox = document.getElementById('infoBox'); 
+             
+            if (body === 'Sun') { 
+                infoBox.innerHTML = ` 
+                    <h2>*The Sun</h2> 
+                    <p>The star at the center of our Solar System.</p> 
+                    <p><strong>Type:</strong> G-type Yellow Dwarf</p> 
+                    <p><strong>Diameter:</strong> 1,391,000 km</p> 
+                    <p><strong>Age:</strong> 4.6 billion years</p> 
+                    <p><strong>Temperature:</strong> 5,500°C surface</p> 
+                    <p><strong>Mass:</strong> 99.86% of solar system</p> 
+                `; 
+            } else { 
+                const planet = planets.find(p => p.name === body); 
+                if (planet) { 
+                    infoBox.innerHTML = ` 
+                        <h2>${planet.name}</h2> 
+                        <p>${planet.info}</p> 
+                        <p><strong>Diameter:</strong> ${planet.diameter}</p> 
+                        <p><strong>Orbital Period:</strong> ${planet.year}</p> 
+                    `; 
+                } 
+            } 
+        } 
+ 
+        function focusPlanet(name) { 
+            showInfo(name); 
+        } 
+ 
+        function setSpeed(s) { 
+            speed = s; 
+            document.querySelectorAll('.controls button').forEach(btn => { 
+                btn.classList.remove('active'); 
+            }); 
+            event.target.classList.add('active'); 
+        } 
+ 
+        window.addEventListener('resize', () => { 
+            canvas.width = window.innerWidth; 
+            canvas.height = window.innerHeight; 
+        }); 
+ 
+        animate(); 
+    </script> 
+</body> 
+</html> 
