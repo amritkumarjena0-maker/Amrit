@@ -1,0 +1,9 @@
+Start
+    Read original_price
+    Read tax_rate
+
+    tax_amount ← (original_price × tax_rate) / 100
+    final_price ← original_price + tax_amount
+
+    Display final_price
+End
